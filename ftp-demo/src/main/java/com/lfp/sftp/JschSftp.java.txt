@@ -1,0 +1,187 @@
+package com.lfp.sftp;
+
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.Vector;
+/**
+ * @author ${林锋鹏}
+ * @Title: JschSftp
+ * @ProjectName OSIOperationManagement
+ * @Description: TODO
+ * @date 2021/8/13 10:33
+ */
+
+public class JschSftp {
+
+        private ChannelSftp channelSftp;
+        private String separator = "/";
+        Session sshSession;
+
+        public JschSftp() {
+
+        }
+
+        /**
+         * 连接至服务器
+         *
+         * @param host：地址
+         * @param port：端口号
+         * @param username：账户
+         * @param password：密码
+         */
+        public void connect(String host, int port, String username, String password) throws Exception {
+            JSch jsch = new JSch();
+            jsch.getSession(username, host, port);
+            sshSession = jsch.getSession(username, host, port);
+            sshSession.setPassword(password);
+            Properties sshConfig = new Properties();
+            sshConfig.put("StrictHostKeyChecking", "no");
+            sshSession.setConfig(sshConfig);
+            sshSession.connect();
+            Channel channel = sshSession.openChannel("sftp");
+            channel.connect();
+            this.channelSftp = (ChannelSftp) channel;
+        }
+
+        /**
+         * 关闭连接
+         */
+        public void closeConnect() {
+            if (channelSftp != null) {
+                if (channelSftp.isConnected()) {
+                    sshSession.disconnect();
+                    channelSftp.disconnect();
+                }
+            }
+        }
+
+        /**
+         * 下载
+         *
+         * @param remoteFile：远程的文件路径（包含文件名,如：/xxx/xxx/fileName）
+         * @param localFile：本地路径
+         * @return String:返回一个下载完成后的本地文件路径（包含文件名,如：/xxx/xxx/fileName）
+         */
+        public String get(String remoteFile, String localFile) throws Exception {
+            String path = remoteFile.substring(0, remoteFile.lastIndexOf(separator));
+            String fileName = remoteFile.substring(remoteFile.lastIndexOf(separator) + 1);
+            File filePath = new File(localFile);
+            if (!filePath.exists()) {//如果文件夹不存在
+                filePath.mkdirs();//创建文件夹
+            }
+            if (!path.equals("")) {
+                channelSftp.cd(path);
+            }
+            File file = new File(localFile + File.separator + fileName);
+            OutputStream outputStream = new FileOutputStream(file);
+            channelSftp.get(fileName, outputStream);
+            outputStream.flush();
+            outputStream.close();
+            return localFile + File.separator + fileName;
+        }
+
+        /**
+         * 获取服务端的文件大小
+         *
+         * @param remoteFile：远程文件路径（包含文件名,如：/xxx/xxx/fileName）
+         * @return long:返回一个文件size
+         */
+        public long getRemoteFileSize(String remoteFile) throws Exception {
+            SftpATTRS attr = channelSftp.stat(remoteFile);
+            return attr.getSize();
+        }
+
+        /**
+         * 获取本地的文件大小
+         *
+         * @param localFile：本地文件路径（包含文件名,如：/xxx/xxx/fileName）
+         * @return long:返回一个文件size
+         */
+        public long getLocalFileSize(String localFile){
+            File file = new File(localFile);
+            return file.length();
+        }
+
+        /**
+         * 移动远程文件
+         *
+         * @param remoteFile：原本的文件路径（包含文件名,如：/xxx/xxx/fileName）
+         * @param remoteBakFile：备份的文件路径
+         */
+        public void moveRemoteFile(String remoteFile, String remoteBakFile) throws Exception {
+            String path = remoteFile.substring(0, remoteFile.lastIndexOf(separator));
+            String fileName = remoteFile.substring(remoteFile.lastIndexOf(separator) + 1);
+            if (!path.equals("")) {
+                channelSftp.cd(path);
+            }
+            channelSftp.rename(remoteFile, remoteBakFile + separator + fileName);
+        }
+
+        /**
+         * 移动本地文件
+         *
+         * @param localTmpFile：本地的临时文件存储路径（包含文件名,如：/xxx/xxx/fileName）
+         * @param localFile：本地的文件存储目的路径
+         */
+        public void moveLocalFile(String localTmpFile, String localFile) throws Exception {
+            String fileName = localTmpFile.substring(localTmpFile.lastIndexOf(File.separator) + 1);
+            Files.move(Paths.get(localTmpFile), Paths.get(localFile + File.separator + fileName), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        /**
+         * 推送文件
+         *
+         * @param localFile：本地的文件路径（包含文件名,如：/xxx/xxx/fileName）
+         * @param remoteFile：远程目标文件路径
+         */
+        public void put(String localFile, String remoteFile) throws Exception {
+            if (!remoteFile.equals("")) {
+                channelSftp.cd(remoteFile);
+            }
+            File file = new File(localFile);
+            channelSftp.put(new FileInputStream(file), file.getName());
+        }
+
+        /**
+         * 删除远程文件
+         *
+         * @param remoteFile：远程文件路径（包含文件名,如：/xxx/xxx/fileName）
+         */
+        public void rm(String remoteFile) throws Exception {
+            String path = remoteFile.substring(0, remoteFile.lastIndexOf(separator));
+            String fileName = remoteFile.substring(remoteFile.lastIndexOf(separator) + 1);
+            if (!path.equals("")) {
+                channelSftp.cd(path);
+            }
+            channelSftp.rm(fileName);
+        }
+
+        /**
+         * 扫描远程路径下的文件
+         *
+         * @param remoteDir：远程路径
+         * @return List：返回一个文件路径列表（包含文件名,如：/xxx/xxx/fileName）集合
+         */
+        public List<String> scan(String remoteDir) throws Exception {
+            List<String> remoteFile = new ArrayList<>();
+            Vector ls = channelSftp.ls(remoteDir);
+            for (Object entry : ls) {
+                ChannelSftp.LsEntry e = (ChannelSftp.LsEntry) entry;
+                if (!e.getAttrs().isDir()) {
+                    remoteFile.add(remoteDir + separator + e.getFilename());
+                }
+            }
+            return remoteFile;
+        }
+
+}
+
