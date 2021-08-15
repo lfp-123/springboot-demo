@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.luoyu</groupId>
+    <groupId>com.lfp</groupId>
     <artifactId>springboot-demo</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
@@ -46,6 +46,8 @@
         <module>zxing-demo</module>
         <module>dynamicmultipledatasources-demo</module>
         <module>dubbo-demo</module>
+        <module>java-demo</module>
+        <module>ftp-demo</module>
     </modules>
 
 </project>
