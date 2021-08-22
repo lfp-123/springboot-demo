@@ -1,7 +1,7 @@
-package com.luoyu.proxy.streamProxy;
+package com.lfp.proxy.streamProxy;
 
-import com.luoyu.proxy.staticProxy.RealStar;
-import com.luoyu.proxy.staticProxy.Star;
+import com.lfp.proxy.staticProxy.RealStar;
+import com.lfp.proxy.staticProxy.Star;
 
 /**
  * @author ${林锋鹏}

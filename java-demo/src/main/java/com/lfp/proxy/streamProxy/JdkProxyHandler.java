@@ -1,6 +1,6 @@
-package com.luoyu.proxy.streamProxy;
+package com.lfp.proxy.streamProxy;
 
-import com.luoyu.proxy.staticProxy.Star;
+import com.lfp.proxy.staticProxy.Star;
 
 import java.lang.reflect.Proxy;
 

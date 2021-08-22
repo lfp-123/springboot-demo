@@ -1,4 +1,4 @@
-package com.luoyu.proxy.staticProxy;
+package com.lfp.proxy.staticProxy;
 
 /**
  * @author ${林锋鹏}
